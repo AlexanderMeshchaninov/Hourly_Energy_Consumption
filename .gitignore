@@ -2,3 +2,4 @@
 **/___pycache____/
 # Игнорирование .DS_Store
 .DS_Store
+*venv/

@@ -105,7 +105,7 @@ def plot_forecast(train, test, forecast, title):
     plt.plot(test, label='Test', color='orange')
     plt.plot(forecast, label='Forecast', color='green')
     plt.title(title)
-    plt.legend(True)
+    plt.legend()
     plt.grid(True)
     plt.show()
 
@@ -123,7 +123,7 @@ def run_sarimax(train, test, S, order=(1, 0, 1), seasonal_order=(1, 0, 1, 24), m
     - maxiter: максимальное количество итераций
 
     Возвращает:
-    - имя модели, горизонт, прогноз, MAE, RMSE, MAPE
+    - имя модели, горизонт, прогноз, MAE, RMSE, MAPE, объект обученной модели
     """
     model = SARIMAX(train['PJM_Load_MW'],
                     order=order,
@@ -133,7 +133,9 @@ def run_sarimax(train, test, S, order=(1, 0, 1), seasonal_order=(1, 0, 1, 24), m
     result = model.fit(disp=False, method=method, maxiter=maxiter)
     forecast = result.get_forecast(steps=S).predicted_mean
     mae, rmse, mape = evaluate(test['PJM_Load_MW'], forecast)
-    return 'SARIMAX', S, forecast, mae, rmse, mape
+
+    # Возвращаем также объект модели, чтобы можно было сериализовать
+    return 'SARIMAX', S, forecast, mae, rmse, mape, result
 
 def run_prophet(train, test, S, prophet_params=None):
     """
@@ -146,7 +148,7 @@ def run_prophet(train, test, S, prophet_params=None):
     - prophet_params: словарь с параметрами Prophet (growth, seasonality и т.д.)
 
     Возвращает:
-    - имя модели, горизонт, прогноз, MAE, RMSE, MAPE
+    - имя модели, горизонт, прогноз, MAE, RMSE, MAPE, объект обученной модели
     """
     prophet_train = train.reset_index().rename(columns={'Datetime': 'ds', 'PJM_Load_MW': 'y'})
     model = Prophet(**(prophet_params or {}))
@@ -157,4 +159,6 @@ def run_prophet(train, test, S, prophet_params=None):
     forecast = forecast_df.set_index('ds')['yhat']
 
     mae, rmse, mape = evaluate(test['PJM_Load_MW'], forecast)
-    return 'Prophet', S, forecast, mae, rmse, mape
+
+    # Возвращаем также объект модели, чтобы его можно было сериализовать
+    return 'Prophet', S, forecast, mae, rmse, mape, model
